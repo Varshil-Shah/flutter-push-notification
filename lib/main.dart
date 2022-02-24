@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:overlay_support/overlay_support.dart';
 
 import 'package:push_notification/models/push_notification.dart';
+import 'package:push_notification/notification_badge.dart';
 
 void main() {
   runApp(const MyApp());
@@ -70,6 +71,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void initState() {
+    _totalNotificationCounter = 0;
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -87,6 +94,30 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.black,
               ),
             ),
+            const SizedBox(height: 12),
+            NotificationBadge(totalNotification: _totalNotificationCounter),
+            _notificationInfo != null
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        "TITLE: ${_notificationInfo!.dataTitle ?? _notificationInfo!.title}",
+                        style: const TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        "BODY: ${_notificationInfo!.dataBody ?? _notificationInfo!.body}",
+                        style: const TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )
+                : Container(),
           ],
         ),
       ),
