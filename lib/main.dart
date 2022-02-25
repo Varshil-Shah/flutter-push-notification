@@ -53,25 +53,110 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint("User granted the permisson");
-    }
+      debugPrint("USER GRANTED THE PERMISSON");
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      FirebaseMessaging.onMessage.listen(
+        (RemoteMessage message) {
+          PushNotification notification = PushNotification(
+            title: message.notification!.title,
+            body: message.notification!.body,
+            dataTitle: message.data['title'],
+            dataBody: message.data['body'],
+          );
+          setState(() {
+            _totalNotificationCounter++;
+            _notificationInfo = notification;
+          });
+
+          showSimpleNotification(
+            Text(_notificationInfo!.title.toString()),
+            leading:
+                NotificationBadge(totalNotification: _totalNotificationCounter),
+            subtitle: Text(_notificationInfo!.body.toString()),
+            background: Colors.deepOrangeAccent.shade700,
+            duration: const Duration(seconds: 3),
+          );
+        },
+      );
+    } else {
+      debugPrint("PERMISSION DECLINED BY USER");
+    }
+  }
+
+  void checkForInitialMessage() async {
+    await Firebase.initializeApp();
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
       PushNotification notification = PushNotification(
-        title: message.notification!.title,
-        body: message.notification!.body,
-        dataTitle: message.data['title'],
-        dataBody: message.data['body'],
+        title: initialMessage.notification!.title,
+        body: initialMessage.notification!.body,
+        dataTitle: initialMessage.data['title'],
+        dataBody: initialMessage.data['body'],
       );
       setState(() {
         _totalNotificationCounter++;
         _notificationInfo = notification;
       });
+    }
+  }
+
+  Future<void> backgroundNotificationHandler(RemoteMessage message) async {
+    await Firebase.initializeApp();
+    PushNotification notification = PushNotification(
+      title: message.notification!.title,
+      body: message.notification!.body,
+      dataTitle: message.data['title'],
+      dataBody: message.data['body'],
+    );
+    setState(() {
+      _totalNotificationCounter++;
+      _notificationInfo = notification;
     });
+
+    showSimpleNotification(
+      Text(message.notification!.title.toString()),
+      leading: NotificationBadge(totalNotification: _totalNotificationCounter),
+      subtitle: Text(message.notification!.body.toString()),
+      background: Colors.deepOrangeAccent.shade700,
+      duration: const Duration(seconds: 3),
+    );
   }
 
   @override
   void initState() {
+    // When app is running in background -
+    FirebaseMessaging.onMessageOpenedApp.listen(
+      (RemoteMessage message) {
+        PushNotification notification = PushNotification(
+          title: message.notification!.title,
+          body: message.notification!.body,
+          dataTitle: message.data['title'],
+          dataBody: message.data['body'],
+        );
+        setState(() {
+          _totalNotificationCounter++;
+          _notificationInfo = notification;
+        });
+        showSimpleNotification(
+          Text(message.notification!.title.toString()),
+          leading:
+              NotificationBadge(totalNotification: _totalNotificationCounter),
+          subtitle: Text(message.notification!.body.toString()),
+          background: Colors.deepOrangeAccent.shade700,
+          duration: const Duration(seconds: 3),
+        );
+      },
+    );
+
+    // Normal notification -
+    registerNotification();
+
+    // When app is in terminated state -
+    checkForInitialMessage();
+
+    FirebaseMessaging.onBackgroundMessage(backgroundNotificationHandler);
+
     _totalNotificationCounter = 0;
     super.initState();
   }
@@ -100,6 +185,7 @@ class _HomePageState extends State<HomePage> {
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      const SizedBox(height: 9),
                       Text(
                         "TITLE: ${_notificationInfo!.dataTitle ?? _notificationInfo!.title}",
                         style: const TextStyle(
@@ -107,7 +193,6 @@ class _HomePageState extends State<HomePage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 9),
                       Text(
                         "BODY: ${_notificationInfo!.dataBody ?? _notificationInfo!.body}",
                         style: const TextStyle(
